@@ -727,7 +727,8 @@ aside{width:380px;flex:0 0 380px;background:var(--surface);border-left:1px solid
 .pin.approx{border-style:dashed}.pin.arch{opacity:.4;background:#727C88}
 .pin.on{outline:2.5px solid #14181D;outline-offset:1px;z-index:1000}
 .leaflet-marker-icon.pinwrap{background:none;border:0}
-.marker-cluster{background:rgba(20,24,29,.25)}.marker-cluster div{background:#14181D;color:#fff;font-family:var(--mono);font-weight:600;font-size:12px}
+.marker-cluster{background:rgba(20,24,29,.22);border-radius:50%;width:40px!important;height:40px!important;margin-left:-20px!important;margin-top:-20px!important;display:flex;align-items:center;justify-content:center}
+.marker-cluster div{width:30px;height:30px;border-radius:50%;background:#14181D;color:#fff;font-family:var(--mono);font-weight:600;font-size:12px;display:flex;align-items:center;justify-content:center;border:1.5px solid #fff}
 .home{width:16px;height:16px;border-radius:50%;background:#9C3D22;border:3px solid #fff;box-shadow:0 0 0 2px #9C3D22}
 /* popup */
 .leaflet-popup-content-wrapper{border-radius:6px;padding:0;overflow:hidden;box-shadow:0 8px 30px -8px rgba(0,0,0,.5);font-family:var(--dsp)}
@@ -804,10 +805,12 @@ function sorted(){ const k=S.sort, rows=live().map(p=>({p,c:calc(p)}));
   return rows.sort((a,b)=>v(a)-v(b)); }
 // map
 const map=L.map("map",{zoomControl:true,preferCanvas:false}).setView([D.home.lat,D.home.lon],10);
-const voyager=L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",{maxZoom:19,subdomains:"abcd",attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'});
 const osm=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'});
+const esri=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"Tiles &copy; Esri &mdash; Esri, HERE, Garmin, OpenStreetMap contributors"});
 const sat=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"Tiles &copy; Esri, Maxar, Earthstar Geographics"});
-voyager.addTo(map); L.control.layers({"Streets":voyager,"OpenStreetMap":osm,"Satellite":sat},null,{position:"topright"}).addTo(map);
+const base={}; try{ base.k=localStorage.getItem("carrymap-base")||""; }catch(e){}
+const layers={"Streets":osm,"Streets (Esri)":esri,"Satellite":sat}; (layers[base.k]||osm).addTo(map);
+L.control.layers(layers,null,{position:"topright"}).addTo(map); map.on("baselayerchange",e=>{ try{ localStorage.setItem("carrymap-base",e.name); }catch(x){} });
 L.marker([D.home.lat,D.home.lon],{icon:L.divIcon({className:"",html:'<div class="home" title="Home"></div>',iconSize:[16,16],iconAnchor:[8,8]}),zIndexOffset:-100}).addTo(map).bindTooltip("Home · "+D.home.label);
 L.circle([D.home.lat,D.home.lon],{radius:40*1609.34,color:"#9C3D22",weight:1,dashArray:"6 6",fill:false,interactive:false}).addTo(map);
 const cluster=L.markerClusterGroup({maxClusterRadius:36,disableClusteringAtZoom:13,spiderfyOnMaxZoom:true,showCoverageOnHover:false,
