@@ -1,0 +1,930 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>The Carry Desk · Neighborhoods</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>/* required styles */
+
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-tile-container,
+.leaflet-pane > svg,
+.leaflet-pane > canvas,
+.leaflet-zoom-box,
+.leaflet-image-layer,
+.leaflet-layer {
+	position: absolute;
+	left: 0;
+	top: 0;
+	}
+.leaflet-container {
+	overflow: hidden;
+	}
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+	-webkit-user-select: none;
+	   -moz-user-select: none;
+	        user-select: none;
+	  -webkit-user-drag: none;
+	}
+/* Prevents IE11 from highlighting tiles in blue */
+.leaflet-tile::selection {
+	background: transparent;
+}
+/* Safari renders non-retina tile on retina better with this, but Chrome is worse */
+.leaflet-safari .leaflet-tile {
+	image-rendering: -webkit-optimize-contrast;
+	}
+/* hack that prevents hw layers "stretching" when loading new tiles */
+.leaflet-safari .leaflet-tile-container {
+	width: 1600px;
+	height: 1600px;
+	-webkit-transform-origin: 0 0;
+	}
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+	display: block;
+	}
+/* .leaflet-container svg: reset svg max-width decleration shipped in Joomla! (joomla.org) 3.x */
+/* .leaflet-container img: map is broken in FF if you have max-width: 100% on tiles */
+.leaflet-container .leaflet-overlay-pane svg {
+	max-width: none !important;
+	max-height: none !important;
+	}
+.leaflet-container .leaflet-marker-pane img,
+.leaflet-container .leaflet-shadow-pane img,
+.leaflet-container .leaflet-tile-pane img,
+.leaflet-container img.leaflet-image-layer,
+.leaflet-container .leaflet-tile {
+	max-width: none !important;
+	max-height: none !important;
+	width: auto;
+	padding: 0;
+	}
+
+.leaflet-container img.leaflet-tile {
+	/* See: https://bugs.chromium.org/p/chromium/issues/detail?id=600120 */
+	mix-blend-mode: plus-lighter;
+}
+
+.leaflet-container.leaflet-touch-zoom {
+	-ms-touch-action: pan-x pan-y;
+	touch-action: pan-x pan-y;
+	}
+.leaflet-container.leaflet-touch-drag {
+	-ms-touch-action: pinch-zoom;
+	/* Fallback for FF which doesn't support pinch-zoom */
+	touch-action: none;
+	touch-action: pinch-zoom;
+}
+.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom {
+	-ms-touch-action: none;
+	touch-action: none;
+}
+.leaflet-container {
+	-webkit-tap-highlight-color: transparent;
+}
+.leaflet-container a {
+	-webkit-tap-highlight-color: rgba(51, 181, 229, 0.4);
+}
+.leaflet-tile {
+	filter: inherit;
+	visibility: hidden;
+	}
+.leaflet-tile-loaded {
+	visibility: inherit;
+	}
+.leaflet-zoom-box {
+	width: 0;
+	height: 0;
+	-moz-box-sizing: border-box;
+	     box-sizing: border-box;
+	z-index: 800;
+	}
+/* workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=888319 */
+.leaflet-overlay-pane svg {
+	-moz-user-select: none;
+	}
+
+.leaflet-pane         { z-index: 400; }
+
+.leaflet-tile-pane    { z-index: 200; }
+.leaflet-overlay-pane { z-index: 400; }
+.leaflet-shadow-pane  { z-index: 500; }
+.leaflet-marker-pane  { z-index: 600; }
+.leaflet-tooltip-pane   { z-index: 650; }
+.leaflet-popup-pane   { z-index: 700; }
+
+.leaflet-map-pane canvas { z-index: 100; }
+.leaflet-map-pane svg    { z-index: 200; }
+
+.leaflet-vml-shape {
+	width: 1px;
+	height: 1px;
+	}
+.lvml {
+	behavior: url(#default#VML);
+	display: inline-block;
+	position: absolute;
+	}
+
+
+/* control positioning */
+
+.leaflet-control {
+	position: relative;
+	z-index: 800;
+	pointer-events: visiblePainted; /* IE 9-10 doesn't have auto */
+	pointer-events: auto;
+	}
+.leaflet-top,
+.leaflet-bottom {
+	position: absolute;
+	z-index: 1000;
+	pointer-events: none;
+	}
+.leaflet-top {
+	top: 0;
+	}
+.leaflet-right {
+	right: 0;
+	}
+.leaflet-bottom {
+	bottom: 0;
+	}
+.leaflet-left {
+	left: 0;
+	}
+.leaflet-control {
+	float: left;
+	clear: both;
+	}
+.leaflet-right .leaflet-control {
+	float: right;
+	}
+.leaflet-top .leaflet-control {
+	margin-top: 10px;
+	}
+.leaflet-bottom .leaflet-control {
+	margin-bottom: 10px;
+	}
+.leaflet-left .leaflet-control {
+	margin-left: 10px;
+	}
+.leaflet-right .leaflet-control {
+	margin-right: 10px;
+	}
+
+
+/* zoom and fade animations */
+
+.leaflet-fade-anim .leaflet-popup {
+	opacity: 0;
+	-webkit-transition: opacity 0.2s linear;
+	   -moz-transition: opacity 0.2s linear;
+	        transition: opacity 0.2s linear;
+	}
+.leaflet-fade-anim .leaflet-map-pane .leaflet-popup {
+	opacity: 1;
+	}
+.leaflet-zoom-animated {
+	-webkit-transform-origin: 0 0;
+	    -ms-transform-origin: 0 0;
+	        transform-origin: 0 0;
+	}
+svg.leaflet-zoom-animated {
+	will-change: transform;
+}
+
+.leaflet-zoom-anim .leaflet-zoom-animated {
+	-webkit-transition: -webkit-transform 0.25s cubic-bezier(0,0,0.25,1);
+	   -moz-transition:    -moz-transform 0.25s cubic-bezier(0,0,0.25,1);
+	        transition:         transform 0.25s cubic-bezier(0,0,0.25,1);
+	}
+.leaflet-zoom-anim .leaflet-tile,
+.leaflet-pan-anim .leaflet-tile {
+	-webkit-transition: none;
+	   -moz-transition: none;
+	        transition: none;
+	}
+
+.leaflet-zoom-anim .leaflet-zoom-hide {
+	visibility: hidden;
+	}
+
+
+/* cursors */
+
+.leaflet-interactive {
+	cursor: pointer;
+	}
+.leaflet-grab {
+	cursor: -webkit-grab;
+	cursor:    -moz-grab;
+	cursor:         grab;
+	}
+.leaflet-crosshair,
+.leaflet-crosshair .leaflet-interactive {
+	cursor: crosshair;
+	}
+.leaflet-popup-pane,
+.leaflet-control {
+	cursor: auto;
+	}
+.leaflet-dragging .leaflet-grab,
+.leaflet-dragging .leaflet-grab .leaflet-interactive,
+.leaflet-dragging .leaflet-marker-draggable {
+	cursor: move;
+	cursor: -webkit-grabbing;
+	cursor:    -moz-grabbing;
+	cursor:         grabbing;
+	}
+
+/* marker & overlays interactivity */
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-image-layer,
+.leaflet-pane > svg path,
+.leaflet-tile-container {
+	pointer-events: none;
+	}
+
+.leaflet-marker-icon.leaflet-interactive,
+.leaflet-image-layer.leaflet-interactive,
+.leaflet-pane > svg path.leaflet-interactive,
+svg.leaflet-image-layer.leaflet-interactive path {
+	pointer-events: visiblePainted; /* IE 9-10 doesn't have auto */
+	pointer-events: auto;
+	}
+
+/* visual tweaks */
+
+.leaflet-container {
+	background: #ddd;
+	outline-offset: 1px;
+	}
+.leaflet-container a {
+	color: #0078A8;
+	}
+.leaflet-zoom-box {
+	border: 2px dotted #38f;
+	background: rgba(255,255,255,0.5);
+	}
+
+
+/* general typography */
+.leaflet-container {
+	font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	font-size: 0.75rem;
+	line-height: 1.5;
+	}
+
+
+/* general toolbar styles */
+
+.leaflet-bar {
+	box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+	border-radius: 4px;
+	}
+.leaflet-bar a {
+	background-color: #fff;
+	border-bottom: 1px solid #ccc;
+	width: 26px;
+	height: 26px;
+	line-height: 26px;
+	display: block;
+	text-align: center;
+	text-decoration: none;
+	color: black;
+	}
+.leaflet-bar a,
+.leaflet-control-layers-toggle {
+	background-position: 50% 50%;
+	background-repeat: no-repeat;
+	display: block;
+	}
+.leaflet-bar a:hover,
+.leaflet-bar a:focus {
+	background-color: #f4f4f4;
+	}
+.leaflet-bar a:first-child {
+	border-top-left-radius: 4px;
+	border-top-right-radius: 4px;
+	}
+.leaflet-bar a:last-child {
+	border-bottom-left-radius: 4px;
+	border-bottom-right-radius: 4px;
+	border-bottom: none;
+	}
+.leaflet-bar a.leaflet-disabled {
+	cursor: default;
+	background-color: #f4f4f4;
+	color: #bbb;
+	}
+
+.leaflet-touch .leaflet-bar a {
+	width: 30px;
+	height: 30px;
+	line-height: 30px;
+	}
+.leaflet-touch .leaflet-bar a:first-child {
+	border-top-left-radius: 2px;
+	border-top-right-radius: 2px;
+	}
+.leaflet-touch .leaflet-bar a:last-child {
+	border-bottom-left-radius: 2px;
+	border-bottom-right-radius: 2px;
+	}
+
+/* zoom control */
+
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out {
+	font: bold 18px 'Lucida Console', Monaco, monospace;
+	text-indent: 1px;
+	}
+
+.leaflet-touch .leaflet-control-zoom-in, .leaflet-touch .leaflet-control-zoom-out  {
+	font-size: 22px;
+	}
+
+
+/* layers control */
+
+.leaflet-control-layers {
+	box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+	background: #fff;
+	border-radius: 5px;
+	}
+.leaflet-control-layers-toggle {
+	background-image: url(images/layers.png);
+	width: 36px;
+	height: 36px;
+	}
+.leaflet-retina .leaflet-control-layers-toggle {
+	background-image: url(images/layers-2x.png);
+	background-size: 26px 26px;
+	}
+.leaflet-touch .leaflet-control-layers-toggle {
+	width: 44px;
+	height: 44px;
+	}
+.leaflet-control-layers .leaflet-control-layers-list,
+.leaflet-control-layers-expanded .leaflet-control-layers-toggle {
+	display: none;
+	}
+.leaflet-control-layers-expanded .leaflet-control-layers-list {
+	display: block;
+	position: relative;
+	}
+.leaflet-control-layers-expanded {
+	padding: 6px 10px 6px 6px;
+	color: #333;
+	background: #fff;
+	}
+.leaflet-control-layers-scrollbar {
+	overflow-y: scroll;
+	overflow-x: hidden;
+	padding-right: 5px;
+	}
+.leaflet-control-layers-selector {
+	margin-top: 2px;
+	position: relative;
+	top: 1px;
+	}
+.leaflet-control-layers label {
+	display: block;
+	font-size: 13px;
+	font-size: 1.08333em;
+	}
+.leaflet-control-layers-separator {
+	height: 0;
+	border-top: 1px solid #ddd;
+	margin: 5px -10px 5px -6px;
+	}
+
+/* Default icon URLs */
+.leaflet-default-icon-path { /* used only in path-guessing heuristic, see L.Icon.Default */
+	background-image: url(images/marker-icon.png);
+	}
+
+
+/* attribution and scale controls */
+
+.leaflet-container .leaflet-control-attribution {
+	background: #fff;
+	background: rgba(255, 255, 255, 0.8);
+	margin: 0;
+	}
+.leaflet-control-attribution,
+.leaflet-control-scale-line {
+	padding: 0 5px;
+	color: #333;
+	line-height: 1.4;
+	}
+.leaflet-control-attribution a {
+	text-decoration: none;
+	}
+.leaflet-control-attribution a:hover,
+.leaflet-control-attribution a:focus {
+	text-decoration: underline;
+	}
+.leaflet-attribution-flag {
+	display: inline !important;
+	vertical-align: baseline !important;
+	width: 1em;
+	height: 0.6669em;
+	}
+.leaflet-left .leaflet-control-scale {
+	margin-left: 5px;
+	}
+.leaflet-bottom .leaflet-control-scale {
+	margin-bottom: 5px;
+	}
+.leaflet-control-scale-line {
+	border: 2px solid #777;
+	border-top: none;
+	line-height: 1.1;
+	padding: 2px 5px 1px;
+	white-space: nowrap;
+	-moz-box-sizing: border-box;
+	     box-sizing: border-box;
+	background: rgba(255, 255, 255, 0.8);
+	text-shadow: 1px 1px #fff;
+	}
+.leaflet-control-scale-line:not(:first-child) {
+	border-top: 2px solid #777;
+	border-bottom: none;
+	margin-top: -2px;
+	}
+.leaflet-control-scale-line:not(:first-child):not(:last-child) {
+	border-bottom: 2px solid #777;
+	}
+
+.leaflet-touch .leaflet-control-attribution,
+.leaflet-touch .leaflet-control-layers,
+.leaflet-touch .leaflet-bar {
+	box-shadow: none;
+	}
+.leaflet-touch .leaflet-control-layers,
+.leaflet-touch .leaflet-bar {
+	border: 2px solid rgba(0,0,0,0.2);
+	background-clip: padding-box;
+	}
+
+
+/* popup */
+
+.leaflet-popup {
+	position: absolute;
+	text-align: center;
+	margin-bottom: 20px;
+	}
+.leaflet-popup-content-wrapper {
+	padding: 1px;
+	text-align: left;
+	border-radius: 12px;
+	}
+.leaflet-popup-content {
+	margin: 13px 24px 13px 20px;
+	line-height: 1.3;
+	font-size: 13px;
+	font-size: 1.08333em;
+	min-height: 1px;
+	}
+.leaflet-popup-content p {
+	margin: 17px 0;
+	margin: 1.3em 0;
+	}
+.leaflet-popup-tip-container {
+	width: 40px;
+	height: 20px;
+	position: absolute;
+	left: 50%;
+	margin-top: -1px;
+	margin-left: -20px;
+	overflow: hidden;
+	pointer-events: none;
+	}
+.leaflet-popup-tip {
+	width: 17px;
+	height: 17px;
+	padding: 1px;
+
+	margin: -10px auto 0;
+	pointer-events: auto;
+
+	-webkit-transform: rotate(45deg);
+	   -moz-transform: rotate(45deg);
+	    -ms-transform: rotate(45deg);
+	        transform: rotate(45deg);
+	}
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+	background: white;
+	color: #333;
+	box-shadow: 0 3px 14px rgba(0,0,0,0.4);
+	}
+.leaflet-container a.leaflet-popup-close-button {
+	position: absolute;
+	top: 0;
+	right: 0;
+	border: none;
+	text-align: center;
+	width: 24px;
+	height: 24px;
+	font: 16px/24px Tahoma, Verdana, sans-serif;
+	color: #757575;
+	text-decoration: none;
+	background: transparent;
+	}
+.leaflet-container a.leaflet-popup-close-button:hover,
+.leaflet-container a.leaflet-popup-close-button:focus {
+	color: #585858;
+	}
+.leaflet-popup-scrolled {
+	overflow: auto;
+	}
+
+.leaflet-oldie .leaflet-popup-content-wrapper {
+	-ms-zoom: 1;
+	}
+.leaflet-oldie .leaflet-popup-tip {
+	width: 24px;
+	margin: 0 auto;
+
+	-ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678)";
+	filter: progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678);
+	}
+
+.leaflet-oldie .leaflet-control-zoom,
+.leaflet-oldie .leaflet-control-layers,
+.leaflet-oldie .leaflet-popup-content-wrapper,
+.leaflet-oldie .leaflet-popup-tip {
+	border: 1px solid #999;
+	}
+
+
+/* div icon */
+
+.leaflet-div-icon {
+	background: #fff;
+	border: 1px solid #666;
+	}
+
+
+/* Tooltip */
+/* Base styles for the element that has a tooltip */
+.leaflet-tooltip {
+	position: absolute;
+	padding: 6px;
+	background-color: #fff;
+	border: 1px solid #fff;
+	border-radius: 3px;
+	color: #222;
+	white-space: nowrap;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	pointer-events: none;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+	}
+.leaflet-tooltip.leaflet-interactive {
+	cursor: pointer;
+	pointer-events: auto;
+	}
+.leaflet-tooltip-top:before,
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+	position: absolute;
+	pointer-events: none;
+	border: 6px solid transparent;
+	background: transparent;
+	content: "";
+	}
+
+/* Directions */
+
+.leaflet-tooltip-bottom {
+	margin-top: 6px;
+}
+.leaflet-tooltip-top {
+	margin-top: -6px;
+}
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-top:before {
+	left: 50%;
+	margin-left: -6px;
+	}
+.leaflet-tooltip-top:before {
+	bottom: 0;
+	margin-bottom: -12px;
+	border-top-color: #fff;
+	}
+.leaflet-tooltip-bottom:before {
+	top: 0;
+	margin-top: -12px;
+	margin-left: -6px;
+	border-bottom-color: #fff;
+	}
+.leaflet-tooltip-left {
+	margin-left: -6px;
+}
+.leaflet-tooltip-right {
+	margin-left: 6px;
+}
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+	top: 50%;
+	margin-top: -6px;
+	}
+.leaflet-tooltip-left:before {
+	right: 0;
+	margin-right: -12px;
+	border-left-color: #fff;
+	}
+.leaflet-tooltip-right:before {
+	left: 0;
+	margin-left: -12px;
+	border-right-color: #fff;
+	}
+
+/* Printing */
+
+@media print {
+	/* Prevent printers from removing background-images of controls. */
+	.leaflet-control {
+		-webkit-print-color-adjust: exact;
+		print-color-adjust: exact;
+		}
+	}
+</style>
+<style>
+:root{
+  --bg:#F2F4F3; --surface:#FFFFFF; --ink:#16211E; --muted:#5B6A66; --line:#D6DDDA; --soft:#E7ECEA;
+  --water:#BFD9E6; --waterline:#5E94B0; --land:#F7F5EF; --county:#E2E0D8; --state:#9AA39E; --urban:#ECE6DA; --park:#DCEBD3; --road:#F2B33D; --road-case:#C98A1A; --road-minor:#C9C3B6;
+  --hub:#23407A; --front:#C06A10; --front-soft:#F6E6D2; --warn:#9A3B26; --on:#FFFFFF; --halo:#FFFFFF;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#101513; --surface:#18201D; --ink:#E6ECE9; --muted:#95A5A0; --line:#2B3632; --soft:#202925;
+    --water:#14262F; --waterline:#4D86A3; --land:#1C2421; --county:#2A3430; --state:#56645F; --urban:#26302C; --park:#1F3326; --road:#B98A2E; --road-case:#6E531C; --road-minor:#3A4641;
+    --hub:#8FAAE8; --front:#EBA24C; --front-soft:#3A2A16; --warn:#E58A72; --on:#101513; --halo:#101513;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#101513; --surface:#18201D; --ink:#E6ECE9; --muted:#95A5A0; --line:#2B3632; --soft:#202925;
+  --water:#14262F; --waterline:#4D86A3; --land:#1C2421; --county:#2A3430; --state:#56645F; --urban:#26302C; --park:#1F3326; --road:#B98A2E; --road-case:#6E531C; --road-minor:#3A4641;
+  --hub:#8FAAE8; --front:#EBA24C; --front-soft:#3A2A16; --warn:#E58A72; --on:#101513; --halo:#101513;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;padding-inline:16px;padding-block:22px 44px}
+.wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(28px,5vw,44px);line-height:1.05;margin:0;letter-spacing:-.01em}
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 24px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13.5px;font-weight:500}
+.key{display:inline-flex;align-items:center;gap:7px}
+.dot{width:14px;height:14px;border-radius:50%}
+.dot.hub{background:var(--hub)} .dot.front{background:var(--front)}
+.sq{width:11px;height:11px;background:var(--ink);transform:rotate(45deg)}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-block:6px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:1000;scrollbar-width:none}
+.tabs button{flex:none;font:600 13.5px var(--body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:7px 13px;border-radius:999px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tabs button:focus-visible{outline:2px solid var(--front);outline-offset:2px}
+.panel{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
+@media (max-width:820px){.panel{grid-template-columns:1fr}}
+#map{height:min(68vh,620px);min-height:380px;border-radius:10px;border:1px solid var(--line);background:var(--water)}
+.leaflet-container{background:var(--water);font-family:var(--body)}
+.land{fill:var(--land);fill-opacity:1;stroke:var(--county);stroke-width:1}
+.stateline{fill:none;stroke:var(--state);stroke-width:1.5;stroke-dasharray:5 4}
+.urban{fill:var(--urban);fill-opacity:1;stroke:none}
+.park{fill:var(--park);fill-opacity:1;stroke:none}
+.lake{fill:var(--water);fill-opacity:1;stroke:var(--waterline);stroke-width:1}
+.river{fill:none;stroke:var(--waterline);stroke-width:2}
+.road-minor{fill:none;stroke:var(--road-minor);stroke-width:1.4}
+.road-case{fill:none;stroke:var(--road-case);stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.road-major{fill:none;stroke:var(--road);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.refwrap{width:0;height:0}
+.refwrap span{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;pointer-events:none}
+.refwrap span.off{visibility:hidden}
+.plab{font:500 11.5px var(--body);color:var(--muted);text-shadow:0 0 3px var(--halo),0 0 3px var(--halo),0 0 3px var(--halo)}
+.wlab{font:italic 500 12px var(--body);color:var(--waterline);letter-spacing:.04em}
+.ap{font:700 11px var(--mono);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:1px 4px}
+.shield{font:700 10px var(--mono);color:#fff;background:#3B5F3A;border:1.5px solid #fff;border-radius:4px;padding:0 4px;box-shadow:0 0 0 1px #3B5F3A}
+.back{font:600 12.5px var(--body);color:var(--muted);text-decoration:none}.back:hover{color:var(--ink)}
+.leaflet-control-attribution{font-size:10px}
+.leaflet-bar a{background:var(--surface);color:var(--ink);border-color:var(--line)}
+.mk{position:relative;width:24px;height:24px}
+.mk b{position:absolute;inset:0;border-radius:50%;display:grid;place-items:center;font:700 12px var(--mono);color:var(--on);background:var(--c);box-shadow:0 0 0 2px var(--halo)}
+.mk.hub{--c:var(--hub)} .mk.front{--c:var(--front)}
+.mk .lab{position:absolute;top:50%;left:30px;transform:translateY(-50%);white-space:nowrap;font:600 13px var(--body);color:var(--c);text-shadow:0 0 3px var(--halo),0 0 3px var(--halo),0 0 3px var(--halo),0 0 3px var(--halo);pointer-events:none}
+.mk.L .lab{left:auto;right:30px}
+.mk.U .lab{left:50%;top:auto;bottom:28px;transform:translateX(-50%)}
+.mk.D .lab{left:50%;top:28px;transform:translateX(-50%)}
+.mk .lab.off{visibility:hidden}
+.mk.hl b{box-shadow:0 0 0 2px var(--halo),0 0 0 5px var(--c)}
+.core{position:relative;width:16px;height:16px}
+.core i{position:absolute;inset:2px;background:var(--ink);transform:rotate(45deg);box-shadow:0 0 0 2px var(--halo)}
+.core span{position:absolute;top:20px;left:50%;transform:translateX(-50%);white-space:nowrap;font:700 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink);text-shadow:0 0 3px var(--halo),0 0 3px var(--halo)}
+.side{display:flex;flex-direction:column;gap:10px}
+.lst{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px}
+.lst h3{margin:0 0 6px;font:500 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--c)}
+.lst.hub{--c:var(--hub)} .lst.front{--c:var(--front)}
+.lst ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.lst button{all:unset;box-sizing:border-box;width:100%;display:flex;gap:8px;align-items:center;font-size:13.5px;font-weight:500;padding:4px;border-radius:6px;cursor:pointer}
+.lst button:hover,.lst button.hl{background:var(--soft)}
+.lst button:focus-visible{outline:2px solid var(--front)}
+.badge{flex:none;width:20px;height:20px;border-radius:50%;background:var(--c);color:var(--on);font:700 11px/20px var(--mono);text-align:center}
+@media (max-width:820px){.lists{display:grid;grid-template-columns:1fr 1fr;gap:10px}}
+@media (min-width:821px){.lists{display:flex;flex-direction:column;gap:10px}}
+@media (max-width:440px){.lists{grid-template-columns:1fr}}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12.5px;font-weight:600;padding:5px 10px;border-radius:999px;background:var(--front-soft);color:var(--front)}
+.chip.warn{background:color-mix(in srgb,var(--warn) 12%,transparent);color:var(--warn)}
+.lbl{font:500 10.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.foot{border-top:1px solid var(--line);padding-top:12px;margin-top:8px;font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.foot a{color:var(--hub)}
+</style>
+
+</head><body>
+<div class="wrap">
+  <div class="top">
+    <div><a class="back" href="./">← Carry Desk street map</a><h1>Suburban Wealth Frontiers</h1></div>
+    <div class="legend">
+      <span class="key"><span class="dot hub"></span>Premium hub (ranked)</span>
+      <span class="key"><span class="dot front"></span>Wealth frontier (ranked)</span>
+      <span class="key"><span class="sq"></span>City core</span>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="Choose a metro" id="tabs"></nav>
+  <div class="panel">
+    <div id="map" role="region" aria-label="Map of hubs and frontiers"></div>
+    <div class="side">
+      <div class="lists">
+        <div class="lst hub"><h3>Hubs</h3><ol id="hubList"></ol></div>
+        <div class="lst front"><h3>Frontiers</h3><ol id="frontList"></ol></div>
+      </div>
+      <span class="lbl">Why buyers go further out</span>
+      <div class="chips" id="chips"></div>
+    </div>
+  </div>
+  <div class="foot">
+    <span>Rankings are within each metro and are analyst judgment. Pinch or scroll to zoom; switch to Satellite in the top-right corner.</span>
+    <span>Sources: <a href="https://fortune.com/2026/05/15/census-new-american-dream-texas-fastest-growing-cities-celina-fulshear/">Fortune</a> · <a href="https://www.cbsnews.com/texas/news/celina-princeton-melissa-anna-texas-fastest-growing-cities-north-dallas-census-data/">CBS Texas</a> · <a href="https://www.texastribune.org/2026/05/14/texas-dallas-el-paso-arlington-plano-celina-city-population-census/">Texas Tribune</a> · <a href="https://en.wikipedia.org/wiki/Lekki_International_Airport">Lekki Airport</a> · <a href="https://atlsrealtors.com/lekki-vs-ajah-vs-ibeju-lekki/">Lekki corridor</a> · <a href="https://livinginchicagosuburbs.com/the-chicago-suburbs-that-are-growing-the-fastest-in-2026/">Chicago suburbs 2026</a> · <a href="https://ghanapropertyfinder.com/oyarifa-accra-rising-neighbourhood/">Oyarifa</a> · <a href="https://theafricanvestor.com/blogs/news/accra-which-area">Accra areas 2026</a> · <a href="https://www.bizcommunity.com/article/the-great-escape-where-south-africans-are-moving-next-284757a">SA semigration</a> · <a href="https://www.cch.co.za/news/somerset-west-property-market-109-capital-growth-for-houses-116-increase-in-annual-rand-value/">Somerset West</a> · <a href="https://parispropertygroup.com/news/12-cities-in-greater-paris-worth-looking-into/">Grand Paris Express</a> · <a href="https://www.propertyinvestmentsuk.co.uk/up-and-coming-areas-of-the-london-commuter-belt/">London commuter belt</a>. Maps: © OpenStreetMap contributors, CARTO, Esri. Sept 2026 · Not investment advice.</span>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+// entries: [name, [[lat,lon,label?], ...]]
+const M=[
+{id:"chicago",name:"Chicago",core:["Loop",41.881,-87.628],
+ hubs:[["Hinsdale",[[41.800,-87.937]]],["Winnetka / Wilmette",[[42.092,-87.728]]],["Naperville",[[41.750,-88.153]]],["Oak Brook",[[41.840,-87.952]]],["Barrington",[[42.154,-88.136]]],["Flossmoor / Olympia Fields",[[41.535,-87.700]]]],
+ fronts:[["Oswego",[[41.683,-88.351]]],["Plainfield",[[41.627,-88.204]]],["Yorkville",[[41.641,-88.447]]],["Frankfort / New Lenox",[[41.500,-87.905]]],["Huntley",[[42.168,-88.428]]],["Shorewood",[[41.520,-88.202]]],["Pingree Grove",[[42.066,-88.413]]]],
+ chips:["Lower $/sq ft","New builds","Bigger lots","Newer schools"],watch:"Will Co. taxes still high"},
+{id:"lagos",name:"Lagos",core:["Lagos Island",6.455,3.394],
+ hubs:[["Banana Island",[[6.462,3.448]]],["Ikoyi",[[6.452,3.432]]],["Lekki Phase 1",[[6.447,3.473]]],["Victoria Island",[[6.428,3.421]]],["Ikeja GRA",[[6.580,3.357]]],["Magodo",[[6.620,3.385]]]],
+ fronts:[["Ibeju-Lekki",[[6.445,3.920]]],["Ajah / Sangotedo",[[6.468,3.600]]],["Eko Atlantic",[[6.412,3.408]]],["Epe",[[6.584,3.983]]]],
+ chips:["Refinery + port + FTZ","Dollar buying power","Land = naira hedge","Hubs gridlocked"],watch:"Title risk: verify C of O"},
+{id:"atlanta",name:"Atlanta",core:["Downtown",33.749,-84.388],
+ hubs:[["Milton",[[34.132,-84.300]]],["Johns Creek",[[34.029,-84.198]]],["Alpharetta",[[34.075,-84.294]]],["Dunwoody",[[33.946,-84.334]]],["Cascade / South Fulton",[[33.660,-84.530]]]],
+ fronts:[["Forsyth Co. (Cumming)",[[34.207,-84.140]]],["Peachtree City / Fayetteville",[[33.420,-84.530]]],["Cherokee Co. (Canton / Woodstock)",[[34.170,-84.500]]],["Henry Co. (McDonough)",[[33.447,-84.147]]],["Jackson Co. (Jefferson)",[[34.117,-83.572]]]],
+ chips:["Same schools, lower $","New builds","Bigger lots"],watch:"Long commutes"},
+{id:"dmv",name:"DMV",core:["DC",38.895,-77.036],
+ hubs:[["McLean",[[38.934,-77.177]]],["Great Falls",[[39.000,-77.290]]],["Potomac",[[39.018,-77.208]]],["Bethesda",[[38.981,-77.100]]],["Vienna",[[38.901,-77.265]]],["Mitchellville / Bowie",[[38.930,-76.770]]]],
+ fronts:[["Loudoun (Brambleton / Leesburg)",[[39.000,-77.550]]],["Urbana",[[39.326,-77.351]]],["Gainesville / Haymarket",[[38.800,-77.620]]],["Stafford",[[38.422,-77.408]]],["Waldorf / St. Charles",[[38.620,-76.920]]]],
+ chips:["Low tax (data centers)","Silver Line","Value over proximity"],watch:"Federal job cuts"},
+{id:"houston",name:"Houston",core:["Downtown",29.760,-95.370],
+ hubs:[["Memorial Villages",[[29.775,-95.520]]],["West U / Bellaire",[[29.710,-95.440]]],["The Woodlands",[[30.166,-95.461]]],["Sugar Land",[[29.620,-95.635]]],["Cinco Ranch / Katy",[[29.740,-95.760]]]],
+ fronts:[["Fulshear",[[29.690,-95.899]]],["Bridgeland / Cypress",[[29.930,-95.730]]],["Elyson",[[29.830,-95.860]]],["Richmond / Rosenberg",[[29.570,-95.780]]],["Manvel / Iowa Colony",[[29.470,-95.400]]]],
+ chips:["Same community network","New builds","Hub prices from 2005"],watch:"MUD taxes + flood zones"},
+{id:"dallas",name:"Dallas",core:["Downtown",32.777,-96.797],
+ hubs:[["Highland Park / UP",[[32.840,-96.790]]],["Southlake",[[32.941,-97.134]]],["Frisco",[[33.151,-96.824]]],["Plano",[[33.020,-96.699]]],["Coppell",[[32.955,-97.015]]],["Allen",[[33.103,-96.671]]]],
+ fronts:[["Prosper",[[33.236,-96.801]]],["Celina",[[33.325,-96.784]]],["McKinney North",[[33.250,-96.640]]],["Melissa / Anna",[[33.320,-96.560]]],["Princeton",[[33.180,-96.498]]],["Midlothian",[[32.482,-96.994]]],["Forney",[[32.748,-96.472]]]],
+ chips:["Top-4 US growth","HQs moving north","Tollway extension"],watch:"PID taxes + builder incentives"},
+{id:"newyork",name:"New York",core:["Midtown",40.754,-73.984],
+ hubs:[["Scarsdale",[[40.989,-73.785]]],["Short Hills / Millburn",[[40.730,-74.330]]],["Rye",[[40.981,-73.684]]],["Manhasset",[[40.798,-73.700]]],["Great Neck",[[40.800,-73.729]]],["Ridgewood",[[40.979,-74.117]]],["Edison / West Windsor-Plainsboro",[[40.519,-74.412,"Edison"],[40.300,-74.600,"West Windsor-Plainsboro"]]],["Teaneck / South Orange-Maplewood",[[40.888,-74.016,"Teaneck"],[40.735,-74.265,"South Orange-Maplewood"]]]],
+ fronts:[["Holmdel / Marlboro",[[40.330,-74.215]]],["Bridgewater",[[40.600,-74.650]]],["Robbinsville / Monroe",[[40.260,-74.530]]],["Beacon",[[41.505,-73.970]]],["Orange County NY",[[41.400,-74.320]]],["Lehigh Valley PA",[[40.610,-75.440]]]],
+ chips:["Hybrid work","Half the price","Top NJ schools"],watch:"NJ taxes follow you"},
+{id:"losangeles",name:"Los Angeles",core:["Downtown",34.052,-118.244],
+ hubs:[["San Marino",[[34.121,-118.106]]],["Palos Verdes",[[33.770,-118.370]]],["Calabasas",[[34.158,-118.638]]],["Arcadia",[[34.140,-118.035]]],["Irvine",[[33.684,-117.826]]],["Pasadena",[[34.148,-118.144]]],["View Park / Ladera Heights",[[33.990,-118.350]]]],
+ fronts:[["Rancho Mission Viejo",[[33.520,-117.620]]],["Valencia / FivePoint",[[34.420,-118.600]]],["Eastvale",[[33.964,-117.564]]],["Ontario Ranch",[[33.990,-117.600]]],["Temecula / Menifee",[[33.600,-117.160]]]],
+ chips:["Priced out","Master plans","Out-of-state exit"],watch:"Fire insurance + Mello-Roos"},
+{id:"london",name:"London",core:["Charing Cross",51.507,-0.128],
+ hubs:[["Hampstead / Highgate",[[51.560,-0.165]]],["Richmond / Barnes",[[51.461,-0.303]]],["Wimbledon",[[51.421,-0.206]]],["Cobham / Weybridge",[[51.345,-0.440]]],["Dulwich",[[51.445,-0.085]]],["Harrow / Stanmore",[[51.600,-0.320]]],["Chislehurst",[[51.417,0.067]]]],
+ fronts:[["Ebbsfleet Garden City",[[51.443,0.330]]],["Shenfield / Brentwood",[[51.625,0.315]]],["Chelmsford (Beaulieu)",[[51.760,0.500]]],["Milton Keynes",[[52.040,-0.760]]],["Kings Hill",[[51.275,0.400]]],["Harlow / Gilston",[[51.775,0.100]]]],
+ chips:["Elizabeth line + HS1","Bigger homes, same commute","New garden towns"],watch:"Season-ticket costs"},
+{id:"paris",name:"Paris",core:["Île de la Cité",48.853,2.349],
+ hubs:[["Neuilly-sur-Seine",[[48.885,2.268]]],["Saint-Germain-en-Laye",[[48.898,2.094]]],["Versailles",[[48.805,2.135]]],["Le Vésinet",[[48.893,2.130]]],["Boulogne-Billancourt",[[48.835,2.240]]],["Sceaux",[[48.777,2.290]]],["Vincennes / Saint-Mandé",[[48.847,2.437]]]],
+ fronts:[["Saint-Ouen",[[48.912,2.334]]],["Paris-Saclay (Palaiseau)",[[48.713,2.210]]],["Montreuil",[[48.861,2.443]]],["Massy",[[48.730,2.275]]],["Val d'Europe (Serris)",[[48.850,2.790]]]],
+ chips:["Grand Paris Express","Olympic legacy","Half Paris $/m²"],watch:"Metro line delays"},
+{id:"accra",name:"Accra",core:["Osu",5.556,-0.182],
+ hubs:[["Airport Residential",[[5.603,-0.180]]],["Cantonments",[[5.575,-0.170]]],["East Legon",[[5.635,-0.155]]],["Trasacco Valley",[[5.660,-0.128]]],["Labone",[[5.563,-0.158]]],["Roman Ridge",[[5.597,-0.200]]]],
+ fronts:[["Oyarifa / Aburi Road",[[5.750,-0.170]]],["East Legon Hills",[[5.665,-0.095]]],["Appolonia City",[[5.780,-0.040]]],["Tema Community 25",[[5.730,-0.010]]],["Prampram / Dawhenya",[[5.715,0.110]]]],
+ chips:["Diaspora dollars","Hub land scarce","New gated estates","Road upgrades"],watch:"Land title disputes"},
+{id:"johannesburg",name:"Johannesburg",core:["CBD",-26.205,28.047],
+ hubs:[["Sandhurst",[[-26.108,28.045]]],["Houghton",[[-26.165,28.060]]],["Hyde Park",[[-26.125,28.030]]],["Dainfern",[[-25.995,28.005]]],["Bryanston",[[-26.060,28.020]]],["Westcliff / Parktown",[[-26.172,28.030]]]],
+ fronts:[["Steyn City",[[-25.955,27.985]]],["Waterfall (Midrand)",[[-26.010,28.090]]],["Kyalami",[[-25.990,28.070]]],["Modderfontein / Linbro Park",[[-26.085,28.120]]],["Lanseria corridor",[[-25.940,27.925]]]],
+ chips:["Secure estates","Own power + water","Near Sandton jobs","Value vs Cape Town"],watch:"Estate levies + city services"},
+{id:"capetown",name:"Cape Town",core:["City Bowl",-33.925,18.424],
+ hubs:[["Bishopscourt",[[-33.990,18.443]]],["Constantia",[[-34.025,18.425]]],["Clifton / Camps Bay",[[-33.950,18.378]]],["Fresnaye / Bantry Bay",[[-33.922,18.388]]],["Newlands",[[-33.975,18.462]]]],
+ fronts:[["Somerset West (Lourensford)",[[-34.070,18.860]]],["Stellenbosch",[[-33.935,18.860]]],["Paarl (Val de Vie)",[[-33.810,18.960]]],["Durbanville",[[-33.830,18.650]]],["Blouberg / Big Bay",[[-33.795,18.460]]]],
+ chips:["Semigration from Gauteng","Secure estates","Seaboard maxed out"],watch:"N2 / R44 traffic"}
+];
+
+
+const map=L.map("map",{zoomSnap:.25,scrollWheelZoom:true,zoomControl:true});
+const ATTR='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+const base={
+ "Streets":L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",{maxZoom:19,subdomains:"abcd",attribution:ATTR+' &copy; <a href="https://carto.com/attributions">CARTO</a>'}),
+ "OpenStreetMap":L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:ATTR}),
+ "Satellite":L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"Imagery &copy; Esri"})
+};
+base["Streets"].addTo(map);L.control.layers(base,null,{position:"topright"}).addTo(map);
+map.createPane("refs");map.getPane("refs").style.zIndex=550;
+let layers=L.layerGroup().addTo(map),markers=[],refEls=[];
+const tabs=document.getElementById("tabs");
+tabs.innerHTML=M.map(m=>`<button type="button" role="tab" id="t-${m.id}" aria-selected="false" data-id="${m.id}">${m.name}</button>`).join("");
+tabs.addEventListener("click",e=>{const b=e.target.closest("button");if(b)show(b.dataset.id);});
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function hl(key,on){
+  markers.forEach(mk=>{if(mk.key===key)mk.el&&mk.el.classList.toggle("hl",on);});
+  document.querySelectorAll(`.lst button[data-key="${key}"]`).forEach(b=>b.classList.toggle("hl",on));
+}
+function placeLabels(){
+  // markers first (try 4 sides), then reference labels (fixed spot), hide anything that collides
+  const placed=[];
+  const pad=r=>({left:r.left-2,right:r.right+2,top:r.top-1,bottom:r.bottom+1});
+  document.querySelectorAll("#map .core span").forEach(c=>placed.push(pad(c.getBoundingClientRect())));
+  const dots=markers.map(mk=>mk.el&&mk.el.querySelector("b")).filter(Boolean).map(b=>b.getBoundingClientRect());
+  const ov=(a,b)=>!(a.right<b.left||a.left>b.right||a.bottom<b.top||a.top>b.bottom);
+  const mapR=document.getElementById("map").getBoundingClientRect();
+  const inside=r=>r.left>=mapR.left+2&&r.right<=mapR.right-2&&r.top>=mapR.top&&r.bottom<=mapR.bottom;
+  [...markers].sort((a,b)=>a.pri-b.pri).forEach(mk=>{
+    if(!mk.el)return;const lab=mk.el.querySelector(".lab");lab.classList.remove("off");
+    let ok=false;
+    for(const side of ["R","L","U","D"]){
+      mk.el.classList.remove("L","U","D");if(side!=="R")mk.el.classList.add(side);
+      const r=pad(lab.getBoundingClientRect());
+      if(inside(r)&&!placed.some(p=>ov(p,r))&&!dots.some(d=>ov(d,r))){placed.push(r);ok=true;break;}
+    }
+    if(!ok){mk.el.classList.remove("L","U","D");lab.classList.add("off");}
+  });
+  refEls.forEach(el=>{
+    const n=el.getElement&&el.getElement();if(!n)return;const t=n.firstElementChild;if(!t)return;
+    t.classList.remove("off");const r=pad(t.getBoundingClientRect());
+    if(!inside(r)||placed.some(p=>ov(p,r))||dots.some(d=>ov(d,r)))t.classList.add("off");else placed.push(r);
+  });
+}
+map.on("zoomend moveend",placeLabels);
+
+function show(id){
+  const m=M.find(x=>x.id===id)||M[0];
+  tabs.querySelectorAll("button").forEach(b=>b.setAttribute("aria-selected",b.dataset.id===m.id));
+  layers.clearLayers();markers=[];
+  refEls=[];
+  const pts=[];
+  const add=(kind,arr)=>arr.forEach((e,i)=>e[1].forEach(p=>{
+    const key=kind+"-"+i,label=p[2]||e[0];
+    const icon=L.divIcon({className:"",iconSize:[24,24],iconAnchor:[12,12],html:`<div class="mk ${kind}"><b>${i+1}</b><span class="lab">${esc(label)}</span></div>`});
+    const mk=L.marker([p[0],p[1]],{icon,keyboard:false,title:`${kind==="hub"?"Hub":"Frontier"} #${i+1}: ${e[0]}`}).addTo(layers);
+    const rec={key,pri:i*2+(kind==="front"?1:0),mk,el:null};
+    mk.on("add",()=>{rec.el=mk.getElement().querySelector(".mk");});
+    rec.el=mk.getElement()&&mk.getElement().querySelector(".mk");
+    mk.on("mouseover",()=>hl(key,true));mk.on("mouseout",()=>hl(key,false));
+    markers.push(rec);pts.push([p[0],p[1]]);
+  }));
+  add("hub",m.hubs);add("front",m.fronts);
+  L.marker([m.core[1],m.core[2]],{interactive:false,keyboard:false,icon:L.divIcon({className:"",iconSize:[16,16],iconAnchor:[8,8],html:`<div class="core"><i></i><span>${esc(m.core[0])}</span></div>`})}).addTo(layers);
+  pts.push([m.core[1],m.core[2]]);
+  map.fitBounds(L.latLngBounds(pts),{padding:[40,40]});
+  const li=(arr,k)=>arr.map((e,i)=>`<li><button type="button" data-key="${k}-${i}"><span class="badge">${i+1}</span>${esc(e[0])}</button></li>`).join("");
+  document.getElementById("hubList").innerHTML=li(m.hubs,"hub");
+  document.getElementById("frontList").innerHTML=li(m.fronts,"front");
+  document.querySelectorAll(".lst button").forEach(b=>{
+    const k=b.dataset.key,[kind,i]=k.split("-"),e=m[kind==="hub"?"hubs":"fronts"][+i];
+    b.addEventListener("mouseenter",()=>hl(k,true));b.addEventListener("mouseleave",()=>hl(k,false));
+    b.addEventListener("click",()=>{markers.forEach(x=>hl(x.key,false));const p=e[1][0];map.flyTo([p[0],p[1]],Math.max(map.getZoom(),11),{duration:.6});setTimeout(()=>hl(k,true),650);});
+  });
+  document.getElementById("chips").innerHTML=m.chips.map(c=>`<span class="chip">${esc(c)}</span>`).join("")+`<span class="chip warn">⚠ ${esc(m.watch)}</span>`;
+  setTimeout(placeLabels,0);
+  try{localStorage.setItem("wf-metro",m.id);}catch(e){}
+}
+let start=(location.hash||"").slice(1);
+if(!M.some(m=>m.id===start)){try{start=localStorage.getItem("wf-metro")||"chicago";}catch(e){start="chicago";}}
+show(start);
+window.addEventListener("resize",()=>{map.invalidateSize();placeLabels();});
+</script>
+
+</body></html>
